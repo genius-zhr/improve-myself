@@ -1,6 +1,8 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <string>
 #include <windows.h>
+#include <cstdio>
 using namespace std;
 #define peoplesize 1000
 typedef struct {
@@ -14,6 +16,25 @@ typedef struct {
 	person personarray[peoplesize];
 	int size;
 }addressbooks;
+//把一个联系人写入文件（文本方式）
+void writePerson(FILE* fp, const person& p) {
+	fprintf(fp, "%s %d %d %s %s\n",
+		p.name.c_str(), p.gender, p.age,
+		p.phone.c_str(), p.address.c_str());
+}
+//从文件读一个联系人，成功返回true，读到结尾返回false
+bool readPerson(FILE* fp, person& p) {
+	char name[100], phone[100], address[200];
+	int n = fscanf(fp, "%99s %d %d %99s %199s",
+		name, &p.gender, &p.age, phone, address);
+	if (n == 5) {
+		p.name = name;
+		p.phone = phone;
+		p.address = address;
+		return true;
+	}
+	return false;
+}
 //封装函数显示界面,void showMenu(),在main函数中调用封装好的函数
 void showMenu() {
 	cout << "==========================" << endl;
@@ -47,12 +68,22 @@ void addPerson(addressbooks* abs) {
 			}
 		}
 		cout << "请输入联系人年龄:" << endl;
-		cin >> abs->personarray[abs->size].address;
+		cin >> abs->personarray[abs->size].age;
 		cout << "请输入联系人电话号:" << endl;
 		cin >> abs->personarray[abs->size].phone;
 		cout << "请输入联系人住址:" << endl;
 		cin >> abs->personarray[abs->size].address;
 		abs->size++;
+		FILE* fp = fopen("data.txt", "w");
+		if (fp == NULL) {
+			perror("文件内容添加失败");
+			system("pause");
+			return;
+		}
+		for (int k = 0;k < abs->size;k++) {
+			writePerson(fp, abs->personarray[k]);
+		}
+		fclose(fp);
 		cout << "添加成功" << endl;
 		system("pause");
 		system("cls");
@@ -94,7 +125,16 @@ void deletePerson(addressbooks* abs,int deleteidx) {
 		abs->personarray[i] = abs->personarray[i + 1];
 	}
 	abs->size--;
-	memset(&abs->personarray[abs->size], 0, sizeof(person));
+	FILE* fp = fopen("data.txt", "w");
+	if (fp == NULL) {
+		perror("文件内容删除失败");
+		system("pause");
+		return;
+	}
+	for (int k = 0;k < abs->size;k++) {
+		writePerson(fp, abs->personarray[k]);
+	}
+	fclose(fp);
 	cout << "删除成功" << endl;
 	system("pause");
 	system("cls");
@@ -127,27 +167,65 @@ void modifyPerson(addressbooks* abs, int modifyidx) {
 		}
 	}
 	cout << "请输入联系人年龄:" << endl;
-	cin >> abs->personarray[modifyidx].address;
+	cin >> abs->personarray[modifyidx].age;
 	cout << "请输入联系人电话号:" << endl;
 	cin >> abs->personarray[modifyidx].phone;
 	cout << "请输入联系人住址:" << endl;
 	cin >> abs->personarray[modifyidx].address;
+	FILE* fp = fopen("data.txt", "w");
+	if (fp == NULL) {
+		perror("文件内容修改失败");
+		system("pause");
+		return;
+	}
+	for (int k = 0;k < abs->size;k++) {
+		writePerson(fp, abs->personarray[k]);
+	}
+	fclose(fp);
 	cout << "修改成功" << endl;
 	system("pause");
 	system("cls");
 }
 void cleanPerson(addressbooks* abs) {
-	memset(&abs, 0, sizeof(addressbooks));
-	cout << "已清除" << endl;
+	for (int i = 0;i < abs->size;i++) {
+		abs->personarray[i].name.clear();
+		abs->personarray[i].phone.clear();
+		abs->personarray[i].address.clear();
+		abs->personarray[i].gender = 0;
+		abs->personarray[i].age = 0;
+	}
 	abs->size = 0;
+	FILE* fp = fopen("data.txt", "w");
+	if (fp == NULL) {
+		perror("文件内容清除失败");
+		system("pause");
+		return;
+	}
+	fclose(fp);
+	cout << "已清除" << endl;
 	system("pause");
 	system("cls");
 }
 int main() {
 	SetConsoleOutputCP(CP_UTF8); // 设置控制台输出为 UTF-8，解决中文乱码
 	int select = 0;
+	/*不含文件时的初始化
 	addressbooks abs;
-	abs.size = 0;
+	abs.size = 0;*/
+	addressbooks abs;
+	FILE* fp = fopen("data.txt", "r");
+	if (fp == NULL) {
+		perror("读取文件失败");
+		abs.size=0;
+	}
+	else {
+		int i = 0;
+		while (i < peoplesize && readPerson(fp, abs.personarray[i])) {
+			i++;
+		}
+		abs.size = i;
+		fclose(fp);
+	}
 	while (1) {
 		showMenu();
 		cin >> select;
@@ -216,6 +294,8 @@ int main() {
 			break;
 		case 0://0.退出通讯录
 			cout << "欢迎下次使用!" << endl;
+			system("pause");
+			return 0;
 		default:
 			cout << "重新选择功能" << endl;
 			break;
