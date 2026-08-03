@@ -4,7 +4,16 @@
 #include "Employee.h"
 #include "Manager.h"
 #include <fstream>
+#include <limits>
+#include <cstdlib>
 #define filename "empdata.txt"
+// 输出结果后暂停:按回车键才清屏返回菜单
+void pauseAndClear() {
+	cout << endl << "按回车键返回菜单..." << endl;
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
+	cin.get();
+	system("clear");
+}
 WorkerManager::WorkerManager() {
 	ifstream ifs;
 	ifs.open(filename, ios::in);
@@ -134,7 +143,7 @@ void WorkerManager::addWorker() {
 	else {
 		cout << "输入数据有误" << endl;
 	}
-	system("clear");
+	pauseAndClear();
 }
 void WorkerManager::initemp() {
 	ifstream ifs;
@@ -217,7 +226,7 @@ void WorkerManager::show_emp() {
 			this->array[i]->showInfo();
 			}
 		}
-	system("clear");
+	pauseAndClear();
 }
 void WorkerManager::deleteEmp() {
 	cout << "请输入要删除的职工姓名:" << endl;
@@ -237,12 +246,12 @@ void WorkerManager::deleteEmp() {
 			delete del;
 			this->save();
 			cout << "删除成功" << endl;
-			system("clear");
+			pauseAndClear();
 			return;
 		}
 	}
 	cout << "未找到该职工" << endl;
-	system("clear");
+	pauseAndClear();
 }
 void WorkerManager::modifyEmp() {
 	cout << "请输入要修改的职工姓名:" << endl;
@@ -279,12 +288,12 @@ void WorkerManager::modifyEmp() {
 			this->array[i] = worker;
 			this->save();
 			cout << "修改成功" << endl;
-			system("clear");
+			pauseAndClear();
 			return;
 		}
 	}
 	cout << "未找到该职工" << endl;
-	system("clear");
+	pauseAndClear();
 }
 void WorkerManager::searchEmp() {
 	int select;
@@ -312,13 +321,13 @@ void WorkerManager::searchEmp() {
 		else {
 			cout << "已放弃查找" << endl;
 		}
-		system("clear");
+		pauseAndClear();
 	}
 }
 void WorkerManager::sortEmp() {
 	if (this->m_EmpNum == 0) {
 		cout << "当前没有职工记录" << endl;
-		system("clear");
+		pauseAndClear();
 		return;
 	}
 	//冒泡排序，按编号升序排列
@@ -333,7 +342,7 @@ void WorkerManager::sortEmp() {
 	}
 	this->save();
 	cout << "排序完成!" << endl;
-	system("clear");
+	pauseAndClear();
 }
 void WorkerManager::cleanFile() {
 	cout << "确定要清空所有数据吗?" << endl;
@@ -359,5 +368,5 @@ void WorkerManager::cleanFile() {
 	else {
 		cout << "已取消清空" << endl;
 	}
-	system("clear");
+	pauseAndClear();
 }
