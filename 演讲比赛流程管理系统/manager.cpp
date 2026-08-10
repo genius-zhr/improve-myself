@@ -76,7 +76,7 @@ void SpeechManager::drawOrder() {
     //  m_order 里放的是"这轮要比赛的人"的编号
     //  第一轮是 12 人，第二轮是晋级的 6 人
     //  用 std::shuffle 打乱顺序（参考随机数种子怎么写）
-    m.order.clear();
+    m_order.clear();
     if(m_round==1){
         for(auto it=m_speakers.begin();it!=m_speakers.end();it++){
             m_order.push_back(it->first);
@@ -142,6 +142,17 @@ void SpeechManager::promoteTop(int n, vector<int>& group) {
     //  1. 按成绩从高到低给 group 排序（分数相同怎么排？规则你来定）
     //     —— 这就是练 sort + 自定义比较器的地方
     //  2. 取前 n 个编号，push_back 进 m_promoted
+    // 自定义比较器：按当前轮次成绩从高到低排，同分按编号小在前
+    sort(group.begin(), group.end(), [this](int a, int b) {
+        // m_round 决定比哪一轮的成绩
+        double sa = (m_round == 1) ? m_speakers[a].getRound1() : m_speakers[a].getRound2();
+        double sb = (m_round == 1) ? m_speakers[b].getRound1() : m_speakers[b].getRound2();
+        if (sa != sb) return sa > sb;   // 成绩高的排前面
+        return a < b;                    // 同分：编号小的排前面
+    });
+    for(int i=0;i<n;i++){
+        m_promoted.push_back(group[i]);
+    }
 }
 
 // 显示本轮成绩
