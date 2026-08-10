@@ -68,6 +68,17 @@ void SpeechManager::startSpeech() {
     //    saveResult();     // 追加一届结果到 record.txt
     //    saveRecord();     // 更新 speaker.txt
     //    showScore(2);     // 显示最终结果
+    m_round=1;
+    drawOrder();
+    contest();
+    saveRecord();
+    showScore(1);
+    m_round=2;
+    drawOrder();
+    contest();
+    saveResult();
+    saveRecord();
+    showScore(2);
 }
 
 // 抽签：把当前参赛选手的编号打乱，存进 m_order
@@ -102,6 +113,23 @@ void SpeechManager::contest() {
     //    promoteTop(3, m_order);// 前 3 名 = 最终名次（存进 m_promoted）
     //
     //  打分来源：可以用随机数模拟评委，也可以手动输入，你来定。
+    m_group1.clear();
+    m_group2.clear();
+    if(m_round==1){
+        for(int i=0;i<6;i++){
+            m_group1.push_back(m_order[i]);
+        }
+        for(int i=6;i<12;i++){
+            m_group2.push_back(m_order[i]);
+        }
+        score(1,m_group1);
+        promoteTop(3,m_group1);
+        score(1,m_group2);
+        promoteTop(3,m_group2);
+    }else if(m_round==2){
+        score(2,m_order);
+        promoteTop(3,m_order);
+    }
 }
 
 // 计分：给一组选手算成绩
@@ -168,6 +196,12 @@ void SpeechManager::saveRecord() {
     // TODO:
     //  每行一个选手，格式建议：编号 姓名 第一轮成绩 第二轮成绩（空格分隔）
     //  遍历 m_speakers 写入文件
+    ofstream file;
+    file.open("speaker.txt",ios::out);
+    for(auto it=m_speakers.begin();it!=m_speakers.end();it++){
+        file<<it->second.getId()<<" "<<it->second.getName()<<" "<<it->second.getRound1()<<" "<<it->second.getRound2()<<endl;
+    }
+    file.close();
 }
 
 // 追加本届冠亚季军 到 record.txt
@@ -176,6 +210,18 @@ void SpeechManager::saveResult() {
     //  每届一行，格式建议：届次 冠军编号 亚军编号 季军编号
     //  m_promoted[0] 冠军，m_promoted[1] 亚军，m_promoted[2] 季军
     //  用"追加"方式打开文件（别把上一届覆盖掉）
+    ofstream file;
+    file.open("record.txt",ios::app);
+    int roundNum=0;
+    ifstream infile("record.txt");
+    string line;
+    while (getline(infile, line)) {
+        if (!line.empty()) {
+            roundNum++;
+        }
+    }
+    file<<roundNum+1<<" "<<m_promoted[0]<<" "<<m_promoted[1]<<" "<<m_promoted[2]<<endl;
+    file.close();
 }
 
 // 加载历史记录：检查 record.txt 是否存在、是否为空
@@ -201,6 +247,27 @@ void SpeechManager::showRecord() {
     //    读 record.txt 的每一行，解析出 届次 冠军 亚军 季军 的编号
     //    用编号在 m_speakers 里找到名字，打印出来
     //  提示：文件末尾可能有空行，解析时要能跳过，别崩
+    if(m_fileIsEmpty){
+        cout<<"记录为空"<<endl;
+        return;
+    }else{
+        ifstream file;
+        file.open("record.txt",ios::in);
+        string line;
+        while(getline(file,line)){
+            if(line.empty()){
+                continue;
+            }
+            istringstream iss(line);
+            int roundNum,championId,runnerUpId,thirdPlaceId;
+            iss>>roundNum>>championId>>runnerUpId>>thirdPlaceId;
+            cout<<"第"<<roundNum<<"届比赛结果："<<endl;
+            cout<<"冠军："<<m_speakers.find(championId)->second.getName()<<"（编号："<<championId<<"）"<<endl;
+            cout<<"亚军："<<m_speakers.find(runnerUpId)->second.getName()<<"（编号："<<runnerUpId<<"）"<<endl;
+            cout<<"季军："<<m_speakers.find(thirdPlaceId)->second.getName()<<"（编号："<<thirdPlaceId<<"）"<<endl;
+
+        }
+    }
 }
 
 // 清空往届记录
@@ -209,4 +276,8 @@ void SpeechManager::clearRecord() {
     //  确认后再清空 record.txt（把文件内容清空 or 直接 remove 文件）
     //  记得把 m_fileIsEmpty 改成 true
     //  提示：清空前要不要问一下用户确认？建议要
+    ofstream file;
+    file.open("record.txt",ios::out|ios::trunc);
+    file.close();
+    m_fileIsEmpty=true;
 }
