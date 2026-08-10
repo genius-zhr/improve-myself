@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
-
+#include <deque>
 using namespace std;
 
 // ==================================================================
@@ -18,11 +18,39 @@ SpeechManager::SpeechManager() {
     // TODO:
     //  1. loadRecord()   —— 检查 record.txt 存在吗？为空吗？设置 m_fileIsEmpty
     //  2. initSpeakers() —— 准备 12 名选手名单
+    loadRecord();
+    initSpeakers();
 }
+        
+
 
 SpeechManager::~SpeechManager() {
     // 没有需要手动释放的资源，保持空即可
 }
+void SpeechManager::initSpeakers(){
+        ifstream file;
+        file.open("speaker.txt",ios::in);
+        if(!file.is_open()||file.peek()==EOF){
+            for(int i=0;i<12;i++){
+                Speaker s;
+                s.setId(i+10001);
+                s.setName("选手"+to_string(i+1));
+                m_speakers.insert(make_pair(s.getId(),s));
+            }
+            }else{
+            int id;
+            string name;
+            double round1,round2;
+            while(file>>id&&file>>name&&file>>round1&&file>>round2){
+            Speaker s;
+            s.setId(id);
+            s.setName(name);
+            s.setRound1(round1);
+            s.setRound2(round2);
+            m_speakers.insert(make_pair(s.getId(),s));
+            }
+            }
+    }
 
 // 开始比赛：跑完整两轮
 void SpeechManager::startSpeech() {
@@ -48,6 +76,17 @@ void SpeechManager::drawOrder() {
     //  m_order 里放的是"这轮要比赛的人"的编号
     //  第一轮是 12 人，第二轮是晋级的 6 人
     //  用 std::shuffle 打乱顺序（参考随机数种子怎么写）
+    m.order.clear();
+    if(m_round==1){
+        for(auto it=m_speakers.begin();it!=m_speakers.end();it++){
+            m_order.push_back(it->first);
+        }
+    }else if(m_round==2){
+        m_order=m_promoted;
+    }
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(m_order.begin(), m_order.end(), g);
 }
 
 // 进行一轮比赛：按当前轮次决定分组和晋级方式
@@ -75,6 +114,26 @@ void SpeechManager::score(int round, vector<int>& contestants) {
     //    3. 剩下 8 个求和取平均
     //    4. 把平均分写入该选手对应轮次的成绩（setRound1 / setRound2）
     //  提示：去最高最低可以 sort 后掐头去尾，也可以用 max_element/min_element
+    deque<double> scores;
+    for(auto id : contestants){
+        scores.clear();
+        for(int i=0;i<10;i++){
+            double score;
+            cout<< "请输入选手 " << m_speakers[id].getName() << " 的第 " << i+1 << " 位评委打分：";
+            cin>>score;
+            scores.push_back(score);
+        }
+        sort(scores.begin(),scores.end());
+        scores.pop_front();
+        scores.pop_back();
+        double sum=accumulate(scores.begin(),scores.end(),0.0);
+        double avg=sum/scores.size();
+        if(round==1){
+            m_speakers[id].setRound1(avg);
+        }else if(round==2){
+            m_speakers[id].setRound2(avg);
+        }
+    }
 }
 
 // 晋级：把一组里成绩前 n 名的选手编号，追加进 m_promoted
@@ -114,6 +173,13 @@ void SpeechManager::loadRecord() {
     //  1. 尝试打开 record.txt
     //  2. 判断：文件不存在 or 空文件 -> m_fileIsEmpty = true
     //  3. 文件有内容 -> m_fileIsEmpty = false
+    ifstream file;
+    file.open("record.txt",ios::in);
+    if(!file.is_open()||file.peek()==EOF){
+        m_fileIsEmpty=true;
+    }else{
+        m_fileIsEmpty=false;
+    }
 }
 
 // 查看往届记录

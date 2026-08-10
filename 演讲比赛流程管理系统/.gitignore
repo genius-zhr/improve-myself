@@ -5,3 +5,11 @@ speech
 # 运行生成的数据文件（每次运行都会变，不该进版本库）
 speaker.txt
 record.txt
+
+# 个人开发计划（不进版本库）
+开发计划.md
+
+#测试文件
+test_manager.cpp
+# 测试可执行文件
+test_manager
