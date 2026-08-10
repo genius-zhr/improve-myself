@@ -1,0 +1,7 @@
+# 编译产物
+speech
+*.exe
+
+# 运行生成的数据文件（每次运行都会变，不该进版本库）
+speaker.txt
+record.txt
