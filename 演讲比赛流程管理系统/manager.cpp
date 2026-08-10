@@ -1,6 +1,7 @@
 #include "manager.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <numeric>
 #include <random>
@@ -128,6 +129,7 @@ void SpeechManager::contest() {
         promoteTop(3,m_group2);
     }else if(m_round==2){
         score(2,m_order);
+        m_promoted.clear();   // 决赛结果要"覆盖"第一轮的 6 人，m_promoted 只留冠亚季军
         promoteTop(3,m_order);
     }
 }
@@ -142,14 +144,15 @@ void SpeechManager::score(int round, vector<int>& contestants) {
     //    3. 剩下 8 个求和取平均
     //    4. 把平均分写入该选手对应轮次的成绩（setRound1 / setRound2）
     //  提示：去最高最低可以 sort 后掐头去尾，也可以用 max_element/min_element
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::uniform_int_distribution<int> dist(60, 100);   // 评委打分范围：60~100
+
     deque<double> scores;
     for(auto id : contestants){
         scores.clear();
         for(int i=0;i<10;i++){
-            double score;
-            cout<< "请输入选手 " << m_speakers[id].getName() << " 的第 " << i+1 << " 位评委打分：";
-            cin>>score;
-            scores.push_back(score);
+            scores.push_back(dist(g));   // 随机生成一位评委的打分
         }
         sort(scores.begin(),scores.end());
         scores.pop_front();
@@ -189,6 +192,25 @@ void SpeechManager::showScore(int round) {
     //  第一轮：显示每组选手的成绩和组内名次
     //  第二轮：显示最终排名（冠军 / 亚军 / 季军）
     //  遍历对应容器，从 m_speakers 里取出选手信息打印
+    if(round==1){
+        cout<<"第一轮比赛成绩："<<endl;
+        cout<<"第一组："<<endl;
+        for(int i=0;i<m_group1.size();i++){
+            int id=m_group1[i];
+            cout<<"编号："<<id<<" 姓名："<<m_speakers[id].getName()<<" 成绩："<<m_speakers[id].getRound1()<<endl;
+        }
+        cout<<"第二组："<<endl;
+        for(int i=0;i<m_group2.size();i++){
+            int id=m_group2[i];
+            cout<<"编号："<<id<<" 姓名："<<m_speakers[id].getName()<<" 成绩："<<m_speakers[id].getRound1()<<endl;
+        }
+    }else if(round==2){
+        cout<<"第二轮比赛成绩："<<endl;
+        for(int i=0;i<m_promoted.size();i++){
+            int id=m_promoted[i];
+            cout<<"名次："<<i+1<<" 编号："<<id<<" 姓名："<<m_speakers[id].getName()<<" 成绩："<<m_speakers[id].getRound2()<<endl;
+        }
+    }
 }
 
 // 保存当前名单 + 两轮成绩 到 speaker.txt
