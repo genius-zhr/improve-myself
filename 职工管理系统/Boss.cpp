@@ -12,4 +12,4 @@ void Boss::showInfo() {
 }
 string Boss::getDeptName() {
 	return string("老板");
-}
+}//哈哈哈我是新注释
