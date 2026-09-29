@@ -1,5 +1,6 @@
 #include "func.h"
 #include <vector>
+#include <string>
 void OpenCV::pixelAccess(Mat& image){
     int w=image.cols;
     int h=image.rows;
@@ -366,3 +367,154 @@ void OpenCV::resize_demo(Mat &image){
     */
 }
 
+void OpenCV::rotate_demo(Mat &image){
+    Mat dst,M;
+    int w=image.cols;
+    int h=image.rows;
+    M=getRotationMatrix2D(Point2f(w/2,h/2),45,1.0);//最后一个参数scale是缩放比例
+    double cos=abs(M.at<double>(0,0));
+    double sin=abs(M.at<double>(0,1));
+    int nw=cos*w+sin*h;
+    int nh=sin*w+cos*h;//新h就cos*h，新w就cos*w 
+    M.at<double>(0,2)+=(nw/2-w/2);
+    M.at<double>(1,2)+=(nh/2-h/2);
+    warpAffine(image,dst,M,Size(500,400),INTER_LINEAR,0,Scalar(55,255,55));
+    imshow("rotate",dst);
+    /*Point2f src[]={Point2f(40,180),Point2f(118,150),Point2f(200,200)};
+    Point2f dst1[]={Point2f(40,200),Point2f(118,90),Point2f(200,200)};
+    M=getAffineTransform(src,dst1);
+    M.at<double>(1,2)=30;//y向偏移量
+    warpAffine(image,dst,M,Size(400,1100),INTER_LINEAR,0,Scalar(255,255,55));
+    imshow("rotate",dst);*/  //getAffineTransform测试,源点不能共线，必须能包住一个面积
+}
+
+void OpenCV::video_demo(Mat &image){
+    // 0 = 第 0 个摄像头。WSL 默认不把宿主机的摄像头映射进来,/dev/video0 不存在,这里通常打不开
+    string path="/home/zhanghaoran/image/video/tom.mp4";
+    VideoCapture capture(path);
+    if(!capture.isOpened()){
+        cout<<"视频读取失败，请检查原因"<<endl;
+        return;
+    }
+    Mat frame;
+    Mat gray;
+    int h=capture.get(CAP_PROP_FRAME_HEIGHT);
+    int w=capture.get(CAP_PROP_FRAME_WIDTH);
+    int count=capture.get(CAP_PROP_FRAME_COUNT);
+    double fps=capture.get(CAP_PROP_FPS);
+    cout<<w<<"*"<<h<<" frameCount:"<<count<<" fps"<<fps<<endl;
+    VideoWriter writer("/home/zhanghaoran/image/video",capture.get(CAP_PROP_FOURCC),fps,Size(w,h),false);
+    if(!writer.isOpened()){
+        cout<<"视频检索失败，请检查原因"<<endl;
+        return;
+    }
+    while(1){
+        if(!capture.read(frame)||frame.empty()){  // read 失败时 frame 就是空的,两者一起判
+            break;
+        }
+        cvtColor(frame,gray,COLOR_BGR2GRAY);
+        writer.write(gray);
+        imshow("frame",gray);
+        int key=waitKey(30);       // 33ms ≈ 30fps;waitKey 同时负责刷新窗口
+        if(key==27){               // ESC 退出
+            break;
+        }
+    }
+    capture.release();
+    writer.release();
+}
+
+void OpenCV::blur_demo(Mat &image){
+    Mat dst;
+    imshow("origin",image);
+    blur(image,dst,Size(15,15),Point(-1,-1));//ksize卷积核大小必须是基数
+    imshow("blur",dst);
+}
+
+void OpenCV::gaussian_demo(Mat &image){
+    Mat dst;
+    imshow("origin",image);
+    GaussianBlur(image,dst,Size(3,3),0);
+    imshow("gaussianBlur",dst);
+}
+
+void OpenCV::bilateral_demo(Mat &image){
+    Mat dst;
+    imshow("origin",image);
+    bilateralFilter(image,dst,0,75,10);
+    imshow("fix",dst);
+}
+
+void OpenCV::edge_demo(Mat &image){
+    Mat gray;
+    cvtColor(image,gray,COLOR_BGR2GRAY);
+    //GaussianBlur(gray,gray,Size(15,15),0);
+    cout<<"1.sobel 2.scharr 3.Laplacian 4.Canny"<<endl;
+    imshow("gray",gray);
+    while(1){
+        int c=waitKey(100);
+        if(c==27) {break;}
+        else if(c==49){//sobel
+            Mat sobelX,sobelY,sobelXY;
+            Sobel(gray,sobelX,CV_16S,1,0,3);
+            Sobel(gray,sobelY,CV_16S,0,1,3);
+            convertScaleAbs(sobelX,sobelX);
+            convertScaleAbs(sobelY,sobelY);
+            sobelXY=sobelX+sobelY;
+            imshow("edgeX",sobelX);
+            imshow("edgeY",sobelY);
+            imshow("edgeXY",sobelXY);
+        }
+        else if(c==50){
+            Mat scharrX,scharrY,scharrXY;
+            Scharr(gray,scharrX,CV_16S,1,0,3);
+            Scharr(gray,scharrY,CV_16S,0,1,3);
+            convertScaleAbs(scharrX,scharrX);
+            convertScaleAbs(scharrY,scharrY);
+            scharrXY=scharrX+scharrY;
+            imshow("edgeX",scharrX);
+            imshow("edgeY",scharrY);
+            imshow("edgeXY",scharrXY);
+        }
+        else if(c==51){
+            Mat result,resultg;
+            Laplacian(gray,result,CV_16S,3,1,0);
+            convertScaleAbs(result,result);
+            imshow("edgeXY",result);
+        }
+        else if(c==52){
+            Mat resultG;
+            Canny(gray,resultG,100,200,3);
+            imshow("edgeXY",resultG);
+        }
+    } 
+    destroyAllWindows();
+}
+
+void OpenCV::threshold_demo(Mat &image){
+    Mat gray;
+    cvtColor(image,gray,COLOR_BGR2GRAY);
+    Mat two1,two2,two3,two4,OTSU,TRIANGLE,adapt_mean,adapt_gauss;
+    threshold(gray,two1,127,255,THRESH_BINARY);//大于取1，低于取0
+    threshold(gray,two2,127,255,THRESH_BINARY_INV);//大于取0，小于取1
+    threshold(gray,two3,127,255,THRESH_TOZERO);//大于保留，小于取0
+    threshold(gray,two4,127,255,THRESH_TOZERO_INV);//小于保留，大于取0
+    // Mat greenback=Mat::zeros(image.size(),CV_8UC3);
+    // greenback=Scalar(55,200,55);
+    // image.copyTo(greenback,two1);
+    threshold(gray,OTSU,200,255,THRESH_BINARY|THRESH_OTSU);//大津法，自输入阈值失效
+    threshold(gray,TRIANGLE,100,255,THRESH_BINARY|THRESH_TRIANGLE);//三角形法
+    adaptiveThreshold(gray,adapt_mean,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,55,0);//自适应法，将图像分为x*x各自分别找阈值
+    //最后一个参数是偏移量
+    adaptiveThreshold(gray,adapt_gauss,255,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,55,0);
+    imshow("two1",two1);
+    imshow("two2",two2);
+    imshow("two3",two3);
+    imshow("two4",two4);
+    imshow("OTSU",OTSU);
+    imshow("TRIANGLE",TRIANGLE);
+    imshow("adapt_mean",adapt_mean);
+    imshow("adapt_gauss",adapt_gauss);
+    //imshow("green",greenback);
+    //注释内容为掩码辅助抠像
+}

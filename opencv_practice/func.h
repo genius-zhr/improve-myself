@@ -22,4 +22,11 @@ class OpenCV{
     void norm_demo(Mat &image);//图像数据处理
     void flip_demo(Mat &image);//图像翻转
     void resize_demo(Mat &image);//放缩与插值
+    void rotate_demo(Mat &image);//图像的旋转
+    void video_demo(Mat &image);//播放视频，重点了解播放原理
+    void blur_demo(Mat &image);//均值滤波，图像模糊
+    void gaussian_demo(Mat &image);//高斯模糊
+    void bilateral_demo(Mat &image);//双边滤波
+    void edge_demo(Mat &image);//边缘检测
+    void threshold_demo(Mat &image);//图像二值化
 };
