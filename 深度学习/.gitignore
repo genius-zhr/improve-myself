@@ -1,0 +1,9 @@
+# 数据集：体积 82MB，运行 fashionMNIST.py 会自动重新下载
+data/
+
+# 训练产物：权重和可视化图片，可重新生成
+output/
+
+# Python 缓存
+__pycache__/
+*.pyc
